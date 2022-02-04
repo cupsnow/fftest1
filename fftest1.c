@@ -1,7 +1,9 @@
 /**
+ * @author joelai
  */
+
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#  include <config.h>
 #endif
 
 #include <stdio.h>
@@ -22,7 +24,7 @@
 #include <libswresample/swresample.h>
 
 #define jl_m(_lvl, _fmt, _args...) printf(_lvl "%s #%d " _fmt, __func__, __LINE__, ##_args)
-#define jl_e(_args...) jl_m("ERRORs ", ##_args)
+#define jl_e(_args...) jl_m("ERROR ", ##_args)
 #define jl_d(_args...) jl_m("Debug ", ##_args)
 
 #define jl_arraysize(_arr) (sizeof(_arr) / sizeof((_arr)[0]))
