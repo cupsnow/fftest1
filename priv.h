@@ -26,16 +26,23 @@ extern "C" {
 #define log_level_verb 4
 
 //#define log_m(_lvl, _fmt, _args...) printf(_lvl "%s #%d " _fmt, __func__, __LINE__, ##_args)
-#define log_m(_lvl, _fmt, _args...) _log_m((char*)_lvl, __func__, __LINE__, _fmt, ##_args)
+#define log_m(_lvl, _fmt, _args...) log_printf((char*)_lvl, __func__, __LINE__, _fmt, ##_args)
 #define log_e(_args...) log_m(log_level_err, ##_args)
 #define log_i(_args...) log_m(log_level_info, ##_args)
 #define log_d(_args...) log_m("Debug ", ##_args)
 #define log_v(_args...) log_m("verbose ", ##_args)
 
-__attribute__((format(printf, 4, 5)))
-int _log_m(const char *lvl, const char *func_name, int lno,
-		const char *fmt, ...);
+__attribute__((format(printf, 5, 0)))
+int log_vsnprintf(aloe_buf_t *fb, const char *lvl, const char *func_name,
+		int lno, const char *fmt, va_list);
 
+__attribute__((format(printf, 5, 6)))
+int log_snprintf(aloe_buf_t *fb, const char *lvl, const char *func_name,
+		int lno, const char *fmt, ...);
+
+__attribute__((format(printf, 4, 5)))
+int log_printf(const char *lvl, const char *func_name, int lno,
+		const char *fmt, ...);
 
 extern void *cfg_ctx;
 
@@ -44,9 +51,10 @@ extern void *cfg_ctx;
 #define cfg_key_ctrl_port cfg_key_prefix "cfg_key_ctrl_port"
 
 extern const char *ctrl_path;
-extern int ctrl_port;
+
 #define CTRL_PORT_ANY 0
 #define CTRL_PORT_NONE -1
+extern int ctrl_port;
 
 extern void *ev_ctx;
 

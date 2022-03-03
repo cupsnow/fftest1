@@ -15,6 +15,12 @@
    MSVC and with C++ compilers. */
 #undef FLEXIBLE_ARRAY_MEMBER
 
+/* Define to 1 if you have the <alsa/asoundlib.h> header file. */
+#undef HAVE_ALSA_ASOUNDLIB_H
+
+/* Define to 1 if you have the <cjson/cJSON.h> header file. */
+#undef HAVE_CJSON_CJSON_H
+
 /* Define to 1 if you have the <cJSON.h> header file. */
 #undef HAVE_CJSON_H
 
@@ -89,6 +95,12 @@
 
 /* Version number of package */
 #undef VERSION
+
+/* build with alsa */
+#undef WITH_ALSA
+
+/* build with cJSON */
+#undef WITH_CJSON
 
 /* build with ffmpeg */
 #undef WITH_FFMPEG

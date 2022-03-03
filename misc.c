@@ -178,7 +178,7 @@ int aloe_buf_aprintf(aloe_buf_t *buf, ssize_t max, const char *fmt, ...) {
 	return r;
 }
 
-ssize_t aloe_file_size(const void *f, int fd) {
+ssize_t _aloe_file_size(const void *f, int fd) {
 	struct stat st;
 	int r;
 
@@ -189,7 +189,14 @@ ssize_t aloe_file_size(const void *f, int fd) {
 	}
 	if (r == 0) return st.st_size;
 	r = errno;
-	if (r == ENOENT) return 0;
+	if (r == ENOENT) return -2;
+	return -1;
+}
+
+ssize_t aloe_file_size(const void *f, int fd) {
+	int r = _aloe_file_size(f, fd);
+	if (r >= 0) return r;
+	if (r == -2) return 0;
 	return -1;
 }
 
@@ -244,6 +251,48 @@ int aloe_file_nonblock(int fd, int en) {
 		return r;
 	}
 	return 0;
+}
+
+int _aloe_file_stdout(const char *fname, FILE **sfp, int sfd) {
+	int r, fd;
+
+	if (sfp && *sfp) {
+		FILE *f;
+
+		if (!(f = freopen(fname, "a+", *sfp))) {
+			r = errno;
+//			log_e("Failed reopen %s, %s\n", fname, strerror(r));
+			return -1;
+		}
+		if (*sfp != f) *sfp = f;
+		fd = fileno(f);
+	} else {
+		if ((fd = open(fname, O_WRONLY | O_APPEND | O_CREAT, 0666)) == -1) {
+			r = errno;
+//			log_e("Failed open %s, %s\n", fname, strerror(r));
+			return -1;
+		}
+		if (lseek(fd, 0, SEEK_END) == (off_t)-1) {
+			r = errno;
+//			log_e("Failed set position bottom to %s: %s\n", fname, strerror(r));
+			close(fd);
+			return -1;
+		}
+	}
+
+	if (sfd != -1) {
+		while (dup2(fd, sfd) == -1) {
+			r = errno;
+			if (r == EBUSY || r == EINTR) {
+				usleep(rand() % 300);
+				continue;
+			}
+			if (!sfp || !*sfp) close(fd);
+//			log_e("Failed dup2 %s for #%d, %s\n", fname, sfd, strerror(r));
+			return -1;
+		}
+	}
+	return fd;
 }
 
 int aloe_ip_listener(struct sockaddr *sa, int backlog) {

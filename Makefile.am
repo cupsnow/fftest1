@@ -22,4 +22,8 @@ endif
 bin_PROGRAMS += evmtest1
 evmtest1_SOURCES = evmtest1.cpp ev.c time.c misc.c cfg.c \
     mod_cli.c mod_test1_buf1.c
+if WITH_ALSA
+evmtest1_SOURCES += mod_micloop.c
+endif
+
 

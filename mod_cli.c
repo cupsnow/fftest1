@@ -36,7 +36,7 @@ typedef struct {
 } ctx_t;
 
 static void ctrl_on_input(conn_t *listener, const aloe_buf_t *buf) {
-	log_d("Control command append: %s\n", (char*)buf.data);
+	log_d("Control command append: %s\n", (char*)buf->data);
 }
 
 static void ctrl_on_read(int fd, unsigned ev_noti, void *cbarg) {

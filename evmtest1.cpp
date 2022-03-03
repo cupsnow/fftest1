@@ -55,52 +55,85 @@ static const char *_log_lvl_str(const char *lvl) {
 	return "";
 }
 
-__attribute__((format(printf, 4, 0)))
-static int _log_v(const char *lvl, const char *func_name, int lno,
-		const char *fmt, va_list va) {
+extern "C"
+__attribute__((format(printf, 5, 0)))
+int log_vsnprintf(aloe_buf_t *fb, const char *lvl, const char *func_name,
+		int lno, const char *fmt, va_list va) {
+	int r, pos0 = (int)fb->pos;
+
+	{
+		struct timespec ts;
+		struct tm tm;
+
+		clock_gettime(CLOCK_REALTIME, &ts);
+		localtime_r(&ts.tv_sec, &tm);
+
+		if ((r = aloe_buf_printf(fb, "[%02d:%02d:%02d:%06d]", tm.tm_hour,
+				tm.tm_min, tm.tm_sec, (int)(ts.tv_nsec / 1000))) <= 0) {
+			r = -1;
+			goto finally;
+		}
+	}
+
+	{
+		if ((r = aloe_buf_printf(fb, "[%s]", _log_lvl_str(lvl))) <= 0) {
+			r = -1;
+			goto finally;
+		}
+	}
+
+	{
+		if ((r = aloe_buf_printf(fb, "[%s][#%d]", func_name, lno)) <= 0) {
+			r = -1;
+			goto finally;
+		}
+	}
+
+	if ((r = aloe_buf_vprintf(fb, fmt, va)) < 0) {
+		goto finally;
+	}
+	r = 0;
+finally:
+	return r == 0 ? fb->pos - pos0 : 0;
+}
+
+extern "C"
+__attribute__((format(printf, 5, 6)))
+int log_snprintf(aloe_buf_t *fb, const char *lvl, const char *func_name,
+		int lno, const char *fmt, ...) {
+	int r;
+	va_list va;
+
+	va_start(va, fmt);
+	r = log_vsnprintf(fb, lvl, func_name, lno, fmt, va);
+	va_end(va);
+	return r;
+}
+
+extern "C"
+__attribute__((format(printf, 4, 5)))
+int log_printf(const char *lvl, const char *func_name, int lno,
+		const char *fmt, ...) {
 	char buf[500];
 	aloe_buf_t fb = {.data = buf, .cap = sizeof(buf)};
 	int r, lvl_n;
-	struct timespec ts;
-	struct tm tm;
 	FILE *fp;
+	va_list va;
 
 	if ((lvl_n = _log_lvl(lvl)) > impl.log_level) return 0;
 	fp = ((lvl_n >= log_level_info) ? stderr : stdout);
 
 	aloe_buf_clear(&fb);
-	clock_gettime(CLOCK_REALTIME, &ts);
-	localtime_r(&ts.tv_sec, &tm);
-
-	if ((r = aloe_buf_printf(&fb, "[%02d:%02d:%02d:%06d]", tm.tm_hour,
-	        tm.tm_min, tm.tm_sec, (int)(ts.tv_nsec / 1000))) <= 0) {
-		goto finally;
-	}
-	if ((r = aloe_buf_printf(&fb, "[%s][%s][#%d]", _log_lvl_str(lvl), func_name,
-	        lno)) <= 0) {
-		goto finally;
-	}
-	if ((r = aloe_buf_vprintf(&fb, fmt, va)) < 0) {
-		goto finally;
-	}
-finally:
+	va_start(va, fmt);
+	r = log_vsnprintf(&fb, lvl, func_name, lno, fmt, va);
+	va_end(va);
+	if ((r <= 0)) return 0;
 	aloe_buf_flip(&fb);
 	if (fb.lmt > 0) {
 		fwrite(fb.data, fb.lmt, 1, fp);
-		fflush(stdout);
+		fflush(fp);
 	}
 	return fb.lmt;
-}
-
-extern "C"
-int _log_m(const char *lvl, const char *func_name, int lno,
-        const char *fmt, ...) {
-	int r;
-	va_list va;
-	va_start(va, fmt);
-	r = _log_v(lvl, func_name, lno, fmt, va);
-	va_end(va);
-	return r;
 }
 
 static const char opt_short[] = "ht:v";
@@ -218,6 +251,9 @@ int main(int argc, char **argv) {
 		TAILQ_INSERT_TAIL(&mod_q, &mod, qent); \
 	}
 	MOD_INIT(mod_cli);
+#ifdef WITH_ALSA
+	MOD_INIT(mod_micloop);
+#endif
 
 #if 0
 	MOD_INIT(mod_test1_buf1);

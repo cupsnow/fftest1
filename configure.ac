@@ -1,6 +1,4 @@
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
-
+#
 AC_PREREQ([2.69])
 AC_INIT([fftest1], [0.1.1], [joe@levender.local])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
@@ -25,7 +23,7 @@ AC_PROG_MKDIR_P
 
 # --enable-debug
 AC_ARG_ENABLE([debug],
-  [AS_HELP_STRING([--enable-debug], [enable debugging, default: no])],
+  [AS_HELP_STRING([--enable-debug], [enable debugging, @<:@no@:>@])],
   [],
   [enable_debug=no])
 AC_MSG_CHECKING([enable debugging])
@@ -74,6 +72,19 @@ AS_IF([test "x$enable_ffmpeg" != "xno"], [
 ], [])
 AM_CONDITIONAL([WITH_FFMPEG], [test "x$enable_ffmpeg" != "xno"])
 
+# Check alsa
+AC_CHECK_HEADERS([alsa/asoundlib.h], [], [enable_alsa=no])
+
+AC_SEARCH_LIBS(snd_pcm_open, [asound], [], [enable_alsa=no])
+
+AC_MSG_CHECKING([build with alsa])
+AC_MSG_RESULT([$enable_alsa])
+
+AS_IF([test "x$enable_alsa" != "xno"], [
+  AC_DEFINE([WITH_ALSA], [1], [build with alsa])
+], [])
+AM_CONDITIONAL([WITH_ALSA], [test "x$enable_alsa" != "xno"])
+
 # package uriparser
 AC_CHECK_HEADERS([uriparser/Uri.h], [], [enable_uriparser=no])
 AC_SEARCH_LIBS(uriParseSingleUriA, [uriparser], [], [enable_uriparser=no])
@@ -83,6 +94,16 @@ AS_IF([test "x$enable_uriparser" != "xno"], [
   AC_DEFINE([WITH_URIPARSER], [1], [build with uriparser])
 ], [])
 AM_CONDITIONAL([WITH_URIPARSER], [test "x$enable_uriparser" != "xno"])
+
+# package cjson
+AC_CHECK_HEADERS([cjson/cJSON.h], [], [enable_cjson=no])
+AC_SEARCH_LIBS(cJSON_Delete, [cjson], [], [enable_cjson=no])
+AC_MSG_CHECKING([build with cJSON])
+AC_MSG_RESULT([$enable_cjson])
+AS_IF([test "x$enable_cjson" != "xno"], [
+  AC_DEFINE([WITH_CJSON], [1], [build with cJSON])
+], [])
+AM_CONDITIONAL([WITH_CJSON], [test "x$enable_cjson" != "xno"])
 
 AC_C_FLEXIBLE_ARRAY_MEMBER
 
